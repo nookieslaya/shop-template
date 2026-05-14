@@ -1,0 +1,31 @@
+.single-product-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.single-product-view__summary .price { font-size: 1.35rem; font-weight: 700; }
+
+.quantity {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.qty-btn {
+  border: 0;
+  background: #fff;
+  width: 2.2rem;
+  cursor: pointer;
+}
+
+.quantity .qty {
+  width: 3rem;
+  border: 0;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .single-product-view { grid-template-columns: 1fr; }
+}

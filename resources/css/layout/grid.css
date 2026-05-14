@@ -1,0 +1,25 @@
+.products-grid,
+.woocommerce ul.products,
+.categories__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (max-width: 1024px) {
+  .products-grid,
+  .woocommerce ul.products,
+  .categories__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .products-grid,
+  .woocommerce ul.products,
+  .categories__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 540px) {
+  .products-grid,
+  .woocommerce ul.products,
+  .categories__grid { grid-template-columns: 1fr; }
+}

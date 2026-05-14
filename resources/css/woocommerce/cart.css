@@ -1,0 +1,32 @@
+.cart-table table,
+.woocommerce-cart-form__contents {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+}
+
+.woocommerce-cart-form__contents th,
+.woocommerce-cart-form__contents td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.9rem;
+  text-align: left;
+}
+
+.cart-collaterals {
+  margin-top: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+@media (max-width: 768px) {
+  .woocommerce-cart-form__contents thead { display: none; }
+  .woocommerce-cart-form__contents tr { display: grid; gap: 0.5rem; padding: var(--space-2); }
+  .woocommerce-cart-form__contents td {
+    display: flex;
+    justify-content: space-between;
+    border: 0;
+    padding: 0;
+  }
+}
