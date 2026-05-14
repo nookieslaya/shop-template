@@ -17,3 +17,9 @@
 .woocommerce a.button:hover,
 .woocommerce button.button:hover,
 .woocommerce input.button:hover { filter: brightness(1.05); }
+
+.button--secondary {
+  background: #ffffff;
+  border-color: #e3e3e3;
+  color: #111111;
+}

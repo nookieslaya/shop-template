@@ -10,6 +10,10 @@
 
 @import './components/buttons.css';
 @import './components/cards.css';
+@import './components/hero.css';
+@import './components/product-categories.css';
+@import './components/featured-products.css';
+@import './components/product-rating.css';
 
 @import './woocommerce/archive.css';
 @import './woocommerce/single.css';

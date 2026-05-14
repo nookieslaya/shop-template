@@ -1,0 +1,46 @@
+.product-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1;
+}
+
+.product-rating__stars {
+  position: relative;
+  display: inline-block;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.product-rating__star {
+  display: block;
+  white-space: nowrap;
+}
+
+.product-rating--empty {
+  color: #dcdcdc;
+}
+
+.product-rating--filled {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  color: #f5b301;
+}
+
+.product-rating__count {
+  color: #6d7282;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .product-rating__stars {
+    font-size: 14px;
+  }
+
+  .product-rating__count {
+    font-size: 13px;
+  }
+}
