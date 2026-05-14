@@ -20,6 +20,7 @@ if (!$product || !$product->is_visible()) {
             ?>
         </div>
         <h2 class="product-card__title"><?php the_title(); ?></h2>
+        <?php echo wp_kses_post(shop_theme_render_product_rating($product)); ?>
         <p class="product-card__price"><?php echo wp_kses_post($product->get_price_html()); ?></p>
     </a>
     <div class="product-card__actions">
