@@ -29,38 +29,60 @@ function shop_theme_setup(): void
 }
 add_action('after_setup_theme', 'shop_theme_setup');
 
-// Resolve compiled asset path from Vite manifest with fallback.
-function shop_theme_asset_path(string $file): string
+// Resolve compiled asset metadata (url + version) from Vite manifest with fallback.
+function shop_theme_asset_meta(string $file): array
 {
     $theme_uri = get_template_directory_uri();
-    $manifest_path = get_template_directory() . '/public/build/manifest.json';
+    $theme_dir = get_template_directory();
+    $manifest_candidates = [
+        $theme_dir . '/public/build/manifest.json',
+        $theme_dir . '/public/build/.vite/manifest.json',
+    ];
 
-    if (file_exists($manifest_path)) {
+    foreach ($manifest_candidates as $manifest_path) {
+        if (!file_exists($manifest_path)) {
+            continue;
+        }
+
         $manifest = json_decode((string) file_get_contents($manifest_path), true);
 
         if (is_array($manifest) && isset($manifest[$file]['file'])) {
-            return $theme_uri . '/public/build/' . ltrim($manifest[$file]['file'], '/');
+            $built_file = ltrim((string) $manifest[$file]['file'], '/');
+            $asset_path = $theme_dir . '/public/build/' . $built_file;
+
+            return [
+                'url'     => $theme_uri . '/public/build/' . $built_file,
+                'version' => file_exists($asset_path) ? (string) filemtime($asset_path) : null,
+            ];
         }
     }
 
-    return $theme_uri . '/public/build/' . $file;
+    $fallback_path = $theme_dir . '/public/build/' . $file;
+
+    return [
+        'url'     => $theme_uri . '/public/build/' . $file,
+        'version' => file_exists($fallback_path) ? (string) filemtime($fallback_path) : null,
+    ];
 }
 
 // Enqueue main CSS and JS app bundle built by Vite.
 function shop_theme_enqueue_assets(): void
 {
+    $main_css = shop_theme_asset_meta('main.css');
+    $app_js = shop_theme_asset_meta('app.js');
+
     wp_enqueue_style(
         'shop-theme-main',
-        shop_theme_asset_path('main.css'),
+        (string) $main_css['url'],
         [],
-        null
+        $main_css['version']
     );
 
     wp_enqueue_script(
         'shop-theme-app',
-        shop_theme_asset_path('app.js'),
+        (string) $app_js['url'],
         [],
-        null,
+        $app_js['version'],
         true
     );
 }
@@ -593,6 +615,16 @@ function shop_theme_customize_register(WP_Customize_Manager $wp_customize): void
         'section' => 'shop_theme_featured_products',
     ]);
 
+    $wp_customize->add_setting('shop_theme_featured_bg_color', [
+        'default'           => '#ececf0',
+        'sanitize_callback' => 'shop_theme_sanitize_hex_color',
+    ]);
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'shop_theme_featured_bg_color', [
+        'label'    => __('Featured section background color', 'shop-theme'),
+        'section'  => 'shop_theme_featured_products',
+        'settings' => 'shop_theme_featured_bg_color',
+    ]));
+
     $wp_customize->add_setting('shop_theme_featured_title_size_desktop', [
         'default'           => 48,
         'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 20, 120),
@@ -679,6 +711,301 @@ function shop_theme_customize_register(WP_Customize_Manager $wp_customize): void
         'section'     => 'shop_theme_featured_products',
         'input_attrs' => ['min' => 0, 'max' => 240, 'step' => 1],
     ]);
+
+    // Promo banner section settings.
+    $wp_customize->add_section('shop_theme_promo_banner', [
+        'title'       => __('Promo Banner Section', 'shop-theme'),
+        'priority'    => 37,
+        'description' => __('Settings for promo/banner section.', 'shop-theme'),
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_title', [
+        'default'           => __('Summer Sale', 'shop-theme'),
+        'sanitize_callback' => 'shop_theme_sanitize_text',
+    ]);
+    $wp_customize->add_control('shop_theme_promo_title', [
+        'type'    => 'text',
+        'label'   => __('Banner title', 'shop-theme'),
+        'section' => 'shop_theme_promo_banner',
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_subtitle', [
+        'default'           => __('Up to 50% off on selected items. Limited time offer!', 'shop-theme'),
+        'sanitize_callback' => 'shop_theme_sanitize_text',
+    ]);
+    $wp_customize->add_control('shop_theme_promo_subtitle', [
+        'type'    => 'text',
+        'label'   => __('Banner subtitle', 'shop-theme'),
+        'section' => 'shop_theme_promo_banner',
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_button_text', [
+        'default'           => __('Shop Sale', 'shop-theme'),
+        'sanitize_callback' => 'shop_theme_sanitize_text',
+    ]);
+    $wp_customize->add_control('shop_theme_promo_button_text', [
+        'type'    => 'text',
+        'label'   => __('Button text', 'shop-theme'),
+        'section' => 'shop_theme_promo_banner',
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_button_url', [
+        'default'           => '',
+        'sanitize_callback' => 'shop_theme_sanitize_url',
+    ]);
+    $wp_customize->add_control('shop_theme_promo_button_url', [
+        'type'    => 'url',
+        'label'   => __('Button URL', 'shop-theme'),
+        'section' => 'shop_theme_promo_banner',
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_button_text_size', [
+        'default'           => 30,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 12, 48),
+    ]);
+    $wp_customize->add_control('shop_theme_promo_button_text_size', [
+        'type'        => 'number',
+        'label'       => __('Button text size (px)', 'shop-theme'),
+        'section'     => 'shop_theme_promo_banner',
+        'input_attrs' => ['min' => 12, 'max' => 48, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_bg_image', [
+        'default'           => '',
+        'sanitize_callback' => 'shop_theme_sanitize_url',
+    ]);
+    $wp_customize->add_control(new WP_Customize_Image_Control($wp_customize, 'shop_theme_promo_bg_image', [
+        'label'    => __('Banner background image', 'shop-theme'),
+        'section'  => 'shop_theme_promo_banner',
+        'settings' => 'shop_theme_promo_bg_image',
+    ]));
+
+    $wp_customize->add_setting('shop_theme_promo_overlay_color', [
+        'default'           => '#0d1028',
+        'sanitize_callback' => 'shop_theme_sanitize_hex_color',
+    ]);
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'shop_theme_promo_overlay_color', [
+        'label'    => __('Overlay color', 'shop-theme'),
+        'section'  => 'shop_theme_promo_banner',
+        'settings' => 'shop_theme_promo_overlay_color',
+    ]));
+
+    $wp_customize->add_setting('shop_theme_promo_overlay_opacity', [
+        'default'           => 58,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 100),
+    ]);
+    $wp_customize->add_control('shop_theme_promo_overlay_opacity', [
+        'type'        => 'number',
+        'label'       => __('Overlay opacity (0-100)', 'shop-theme'),
+        'section'     => 'shop_theme_promo_banner',
+        'input_attrs' => ['min' => 0, 'max' => 100, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_title_size', [
+        'default'           => 56,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 24, 100),
+    ]);
+    $wp_customize->add_control('shop_theme_promo_title_size', [
+        'type'        => 'number',
+        'label'       => __('Title size (px)', 'shop-theme'),
+        'section'     => 'shop_theme_promo_banner',
+        'input_attrs' => ['min' => 24, 'max' => 100, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_subtitle_size', [
+        'default'           => 36,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 14, 64),
+    ]);
+    $wp_customize->add_control('shop_theme_promo_subtitle_size', [
+        'type'        => 'number',
+        'label'       => __('Subtitle size (px)', 'shop-theme'),
+        'section'     => 'shop_theme_promo_banner',
+        'input_attrs' => ['min' => 14, 'max' => 64, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_radius', [
+        'default'           => 18,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 48),
+    ]);
+    $wp_customize->add_control('shop_theme_promo_radius', [
+        'type'        => 'number',
+        'label'       => __('Banner border radius (px)', 'shop-theme'),
+        'section'     => 'shop_theme_promo_banner',
+        'input_attrs' => ['min' => 0, 'max' => 48, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_padding_top', [
+        'default'           => 64,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 240),
+    ]);
+    $wp_customize->add_control('shop_theme_promo_padding_top', [
+        'type'        => 'number',
+        'label'       => __('Section top padding (px)', 'shop-theme'),
+        'section'     => 'shop_theme_promo_banner',
+        'input_attrs' => ['min' => 0, 'max' => 240, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_promo_padding_bottom', [
+        'default'           => 64,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 240),
+    ]);
+    $wp_customize->add_control('shop_theme_promo_padding_bottom', [
+        'type'        => 'number',
+        'label'       => __('Section bottom padding (px)', 'shop-theme'),
+        'section'     => 'shop_theme_promo_banner',
+        'input_attrs' => ['min' => 0, 'max' => 240, 'step' => 1],
+    ]);
+
+    // Showcase tabs section settings.
+    $wp_customize->add_section('shop_theme_showcase_tabs', [
+        'title'       => __('Showcase Tabs Section', 'shop-theme'),
+        'priority'    => 38,
+        'description' => __('Settings for tabs products section.', 'shop-theme'),
+    ]);
+
+    $wp_customize->add_setting('shop_theme_showcase_tab_new_label', [
+        'default'           => __('New Arrivals', 'shop-theme'),
+        'sanitize_callback' => 'shop_theme_sanitize_text',
+    ]);
+    $wp_customize->add_control('shop_theme_showcase_tab_new_label', [
+        'type'    => 'text',
+        'label'   => __('New tab label', 'shop-theme'),
+        'section' => 'shop_theme_showcase_tabs',
+    ]);
+
+    $wp_customize->add_setting('shop_theme_showcase_tab_popular_label', [
+        'default'           => __('Popular', 'shop-theme'),
+        'sanitize_callback' => 'shop_theme_sanitize_text',
+    ]);
+    $wp_customize->add_control('shop_theme_showcase_tab_popular_label', [
+        'type'    => 'text',
+        'label'   => __('Popular tab label', 'shop-theme'),
+        'section' => 'shop_theme_showcase_tabs',
+    ]);
+
+    $wp_customize->add_setting('shop_theme_showcase_tab_sale_label', [
+        'default'           => __('On Sale', 'shop-theme'),
+        'sanitize_callback' => 'shop_theme_sanitize_text',
+    ]);
+    $wp_customize->add_control('shop_theme_showcase_tab_sale_label', [
+        'type'    => 'text',
+        'label'   => __('Sale tab label', 'shop-theme'),
+        'section' => 'shop_theme_showcase_tabs',
+    ]);
+
+    $wp_customize->add_setting('shop_theme_showcase_bg_color', [
+        'default'           => '#ececf0',
+        'sanitize_callback' => 'shop_theme_sanitize_hex_color',
+    ]);
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'shop_theme_showcase_bg_color', [
+        'label'    => __('Section background color', 'shop-theme'),
+        'section'  => 'shop_theme_showcase_tabs',
+        'settings' => 'shop_theme_showcase_bg_color',
+    ]));
+
+    $wp_customize->add_setting('shop_theme_showcase_max_items', [
+        'default'           => 8,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 1, 30),
+    ]);
+    $wp_customize->add_control('shop_theme_showcase_max_items', [
+        'type'        => 'number',
+        'label'       => __('Max products per tab', 'shop-theme'),
+        'section'     => 'shop_theme_showcase_tabs',
+        'input_attrs' => ['min' => 1, 'max' => 30, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_showcase_padding_top', [
+        'default'           => 80,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 240),
+    ]);
+    $wp_customize->add_control('shop_theme_showcase_padding_top', [
+        'type'        => 'number',
+        'label'       => __('Section top padding (px)', 'shop-theme'),
+        'section'     => 'shop_theme_showcase_tabs',
+        'input_attrs' => ['min' => 0, 'max' => 240, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_showcase_padding_bottom', [
+        'default'           => 80,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 240),
+    ]);
+    $wp_customize->add_control('shop_theme_showcase_padding_bottom', [
+        'type'        => 'number',
+        'label'       => __('Section bottom padding (px)', 'shop-theme'),
+        'section'     => 'shop_theme_showcase_tabs',
+        'input_attrs' => ['min' => 0, 'max' => 240, 'step' => 1],
+    ]);
+
+    // Benefits strip section settings.
+    $wp_customize->add_section('shop_theme_benefits_strip', [
+        'title'       => __('Benefits Strip Section', 'shop-theme'),
+        'priority'    => 39,
+        'description' => __('Settings for benefits/icons strip.', 'shop-theme'),
+    ]);
+
+    $wp_customize->add_setting('shop_theme_benefits_bg_color', [
+        'default'           => '#ececf0',
+        'sanitize_callback' => 'shop_theme_sanitize_hex_color',
+    ]);
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'shop_theme_benefits_bg_color', [
+        'label'    => __('Section background color', 'shop-theme'),
+        'section'  => 'shop_theme_benefits_strip',
+        'settings' => 'shop_theme_benefits_bg_color',
+    ]));
+
+    $wp_customize->add_setting('shop_theme_benefits_padding_top', [
+        'default'           => 56,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 240),
+    ]);
+    $wp_customize->add_control('shop_theme_benefits_padding_top', [
+        'type'        => 'number',
+        'label'       => __('Section top padding (px)', 'shop-theme'),
+        'section'     => 'shop_theme_benefits_strip',
+        'input_attrs' => ['min' => 0, 'max' => 240, 'step' => 1],
+    ]);
+
+    $wp_customize->add_setting('shop_theme_benefits_padding_bottom', [
+        'default'           => 56,
+        'sanitize_callback' => static fn(int $value): int => shop_theme_sanitize_range_int($value, 0, 240),
+    ]);
+    $wp_customize->add_control('shop_theme_benefits_padding_bottom', [
+        'type'        => 'number',
+        'label'       => __('Section bottom padding (px)', 'shop-theme'),
+        'section'     => 'shop_theme_benefits_strip',
+        'input_attrs' => ['min' => 0, 'max' => 240, 'step' => 1],
+    ]);
+
+    for ($i = 1; $i <= 4; $i++) {
+        $wp_customize->add_setting("shop_theme_benefit_{$i}_title", [
+            'default'           => '',
+            'sanitize_callback' => 'shop_theme_sanitize_text',
+        ]);
+        $wp_customize->add_control("shop_theme_benefit_{$i}_title", [
+            'type'    => 'text',
+            'label'   => sprintf(__('Benefit %d title', 'shop-theme'), $i),
+            'section' => 'shop_theme_benefits_strip',
+        ]);
+
+        $wp_customize->add_setting("shop_theme_benefit_{$i}_text", [
+            'default'           => '',
+            'sanitize_callback' => 'shop_theme_sanitize_text',
+        ]);
+        $wp_customize->add_control("shop_theme_benefit_{$i}_text", [
+            'type'    => 'text',
+            'label'   => sprintf(__('Benefit %d text', 'shop-theme'), $i),
+            'section' => 'shop_theme_benefits_strip',
+        ]);
+
+        $wp_customize->add_setting("shop_theme_benefit_{$i}_icon", [
+            'default'           => '',
+            'sanitize_callback' => 'shop_theme_sanitize_url',
+        ]);
+        $wp_customize->add_control(new WP_Customize_Image_Control($wp_customize, "shop_theme_benefit_{$i}_icon", [
+            'label'    => sprintf(__('Benefit %d custom icon', 'shop-theme'), $i),
+            'section'  => 'shop_theme_benefits_strip',
+            'settings' => "shop_theme_benefit_{$i}_icon",
+        ]));
+    }
 }
 add_action('customize_register', 'shop_theme_customize_register');
 
@@ -689,6 +1016,9 @@ function shop_theme_get_front_page_sections(): array
         'hero'               => __('Hero', 'shop-theme'),
         'featured-products'  => __('Featured Products', 'shop-theme'),
         'product-categories' => __('Product Categories', 'shop-theme'),
+        'promo-banner'       => __('Promo Banner', 'shop-theme'),
+        'product-showcase-tabs' => __('Showcase Tabs', 'shop-theme'),
+        'benefits-strip'     => __('Benefits Strip', 'shop-theme'),
     ];
 }
 

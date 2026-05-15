@@ -14,6 +14,9 @@
 @import './components/product-categories.css';
 @import './components/featured-products.css';
 @import './components/product-rating.css';
+@import './components/promo-banner.css';
+@import './components/showcase-tabs.css';
+@import './components/benefits-strip.css';
 
 @import './woocommerce/archive.css';
 @import './woocommerce/single.css';

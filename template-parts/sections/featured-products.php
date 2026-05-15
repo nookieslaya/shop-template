@@ -16,6 +16,7 @@ $max_products = (int) get_theme_mod('shop_theme_featured_max_count', 8);
 $show_out_of_stock = (bool) get_theme_mod('shop_theme_featured_show_out_of_stock', false);
 $padding_top = (int) get_theme_mod('shop_theme_featured_padding_top', 80);
 $padding_bottom = (int) get_theme_mod('shop_theme_featured_padding_bottom', 80);
+$background_color = trim((string) get_theme_mod('shop_theme_featured_bg_color', '#ececf0'));
 
 $query_args = [
     'status'  => 'publish',
@@ -42,7 +43,7 @@ $favorites_url = trim((string) get_theme_mod('shop_theme_favorites_url', home_ur
     class="featured-products section"
     aria-labelledby="featured-products-title"
     data-slider="<?php echo esc_attr($use_slider ? 'true' : 'false'); ?>"
-    style="--fp-title-size-desktop: <?php echo esc_attr((string) max(24, min(90, $title_size_desktop))); ?>px; --fp-title-size-mobile: <?php echo esc_attr((string) max(20, min(64, $title_size_mobile))); ?>px; --fp-subtitle-size-desktop: <?php echo esc_attr((string) max(14, min(40, $subtitle_size_desktop))); ?>px; --fp-subtitle-size-mobile: <?php echo esc_attr((string) max(12, min(32, $subtitle_size_mobile))); ?>px; --fp-padding-top: <?php echo esc_attr((string) max(0, min(200, $padding_top))); ?>px; --fp-padding-bottom: <?php echo esc_attr((string) max(0, min(200, $padding_bottom))); ?>px;"
+    style="--fp-title-size-desktop: <?php echo esc_attr((string) max(24, min(90, $title_size_desktop))); ?>px; --fp-title-size-mobile: <?php echo esc_attr((string) max(20, min(64, $title_size_mobile))); ?>px; --fp-subtitle-size-desktop: <?php echo esc_attr((string) max(14, min(40, $subtitle_size_desktop))); ?>px; --fp-subtitle-size-mobile: <?php echo esc_attr((string) max(12, min(32, $subtitle_size_mobile))); ?>px; --fp-padding-top: <?php echo esc_attr((string) max(0, min(200, $padding_top))); ?>px; --fp-padding-bottom: <?php echo esc_attr((string) max(0, min(200, $padding_bottom))); ?>px; --fp-bg-color: <?php echo esc_attr($background_color); ?>;"
 >
     <div class="container">
         <header class="featured-products__header">

@@ -12,6 +12,9 @@ $default_sections = [
     'hero',
     'featured-products',
     'product-categories',
+    'promo-banner',
+    'product-showcase-tabs',
+    'benefits-strip',
 ];
 
 $sections_order = get_post_meta((int) get_the_ID(), '_shop_theme_front_page_sections_order', true);
